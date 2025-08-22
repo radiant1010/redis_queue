@@ -1,4 +1,4 @@
-package com.test.redis.demo.queue.provider;
+package com.test.redis.demo.queue.producer;
 
 import com.test.redis.demo.queue.dto.JobPayload;
 import lombok.RequiredArgsConstructor;
@@ -7,13 +7,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
-/*
-* Queue 작업 관리를 위한 Provider
-* */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class JobQueueProvider {
+public class JobProducer {
 
     private final RedisTemplate<String, Object> redisTemplate;
 

@@ -1,11 +1,11 @@
 package com.test.redis.demo.redis;
 
-import com.test.redis.demo.suport.redis.AbstractRedisTestContainer;
+import com.test.redis.demo.suport.redis.AbstractRedisUnitTestContainer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-public class RedisServiceTest extends AbstractRedisTestContainer {
+public class RedisServiceUnitTest extends AbstractRedisUnitTestContainer {
     // Test용 dto 선언
     public record UserDto(String id, String name, int age) {
     }
