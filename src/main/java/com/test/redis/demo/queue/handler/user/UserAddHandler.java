@@ -11,7 +11,7 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class UserAddHandler implements JobHandler<List<UserDTO>> {
+public class UserAddHandler implements JobHandler<String> {
     private final UserService userService;
 
     public UserAddHandler(UserService userService) {
