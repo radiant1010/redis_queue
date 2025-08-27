@@ -6,5 +6,5 @@ import com.test.redis.demo.queue.key.JobType;
 public interface JobHandler<T> {
     JobType getJobType(); // 실행시킬 Job 타입
 
-    boolean process(String jobId); // DB 혹은 NOSQL에 저장된 데이터를 불러옴
+    boolean process(String jobId); // DB 혹은 NOSQL에 저장된 데이터를 불러와 작업 처리 진행
 }

@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.test.redis.demo.queue.dto.JobPayload;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.queue.key.QueueType;
-import com.test.redis.demo.queue.producer.JobProducer;
+import com.test.redis.demo.queue.provider.JobProvider;
 import com.test.redis.demo.user.dto.UserDTO;
 import com.test.redis.demo.util.SystemUtil;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final JobProducer jobProducer;
+    private final JobProvider jobProvider;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SystemUtil systemUtil;
     private final ObjectMapper objectMapper;
@@ -72,6 +72,6 @@ public class UserService {
 
     // queue에 삽입
     private void enqueueUserJob(JobPayload<String> payload) {
-        jobProducer.enqueue(QueueType.USER.getQueueKey(), payload);
+        jobProvider.enqueue(QueueType.USER.getPendingKey(), payload);
     }
 }

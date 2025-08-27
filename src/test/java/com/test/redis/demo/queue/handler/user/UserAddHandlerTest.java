@@ -14,7 +14,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.doReturn;
 
 // UserAddHandler 통합 테스트
 class UserAddHandlerTest extends AbstractRedisIntegrationTestContainer {

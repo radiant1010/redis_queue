@@ -1,4 +1,4 @@
-package com.test.redis.demo.queue.producer;
+package com.test.redis.demo.queue.provider;
 
 import com.test.redis.demo.queue.dto.JobPayload;
 import lombok.RequiredArgsConstructor;
@@ -11,17 +11,17 @@ import java.util.Optional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class JobProducer {
+public class JobProvider {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    // queue에 작업 추가
+    // queue에 작업 추가(non-blocking)
     public <T> void enqueue(String queueName, JobPayload<T> job) {
         log.debug("Queue 삽입 : queueKey={}, job={}", queueName, job);
         redisTemplate.opsForList().leftPush(queueName, job);
     }
 
-    // queue에 작업 꺼내기
+    // queue에 작업 꺼내기(non-blocking)
     public Optional<JobPayload<?>> dequeue(String queueName) {
         log.debug("Queue 꺼내기 : queueKey={}", queueName);
 
@@ -32,7 +32,7 @@ public class JobProducer {
         }
         return Optional.empty();
     }
-
+    
     public long getQueueSize(String queueName) {
         Long size = redisTemplate.opsForList().size(queueName);
         return size != null ? size : 0;

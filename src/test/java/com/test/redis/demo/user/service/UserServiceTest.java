@@ -1,10 +1,9 @@
 package com.test.redis.demo.user.service;
 
 import com.test.redis.demo.queue.dto.JobPayload;
-import com.test.redis.demo.queue.handler.user.UserAddHandler;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.queue.key.QueueType;
-import com.test.redis.demo.queue.producer.JobProducer;
+import com.test.redis.demo.queue.provider.JobProvider;
 import com.test.redis.demo.user.dto.UserDTO;
 import com.test.redis.demo.util.SystemUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,10 +14,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
@@ -34,7 +31,7 @@ class UserServiceTest {
     private UserService userService;
 
     @Mock
-    private JobProducer mockJobProducer;
+    private JobProvider mockJobProvider;
 
     @Mock
     private SystemUtil mockSystemUtil;
@@ -75,7 +72,7 @@ class UserServiceTest {
 
         // 큐 삽입 검증
         ArgumentCaptor<JobPayload<String>> payloadCaptor = ArgumentCaptor.forClass(JobPayload.class);
-        verify(mockJobProducer, times(1)).enqueue(eq(QueueType.USER.getQueueKey()), payloadCaptor.capture());
+        verify(mockJobProvider, times(1)).enqueue(eq(QueueType.USER.getPendingKey()), payloadCaptor.capture());
 
         // payload 검증
         JobPayload<String> capturedPayload = payloadCaptor.getValue();
