@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Optional;
 
 @Slf4j
@@ -32,7 +33,35 @@ public class JobProvider {
         }
         return Optional.empty();
     }
-    
+
+    /*
+     * pending 상태의 queue 리스트에서 작업을 꺼내 processing queue 으로 이동 시킨다.
+     *
+     * @param pendingQueueKey : 작업 대기중인 큐(queue:pending:user-jobs)
+     * @param processingQueueKey : 작업 처리중인 큐(queue:processing:user-jobs)
+     * @param timeout : 작업이 없을 시 대기 시간
+     *
+     */
+    public Optional<JobPayload<?>> dequeueAndMoveToProcessing(String pendingQueueKey, String processingQueueKey, Duration timeout) {
+        Object jobObject = redisTemplate.opsForList().rightPopAndLeftPush(pendingQueueKey, processingQueueKey, timeout);
+        if (jobObject instanceof JobPayload<?> job) {
+            return Optional.of(job);
+        }
+        return Optional.empty();
+    }
+
+    // processing queue에서 완료된 작업 제거
+    public void removeProcessingQueue(String processingQueueKey, JobPayload<?> job) {
+        // count 1은 리스트의 앞에서부터 job과 일치하는 첫 번째 항목 1개를 제거 한다는 의미
+        redisTemplate.opsForList().remove(processingQueueKey, 1, job);
+    }
+
+    // 작업 실패 queue로 이동 처리
+    public void moveToDlq(String dlqKey, JobPayload<?> job) {
+        log.warn("작업 실패! DLQ key={}로 이동: {}", dlqKey, job);
+        redisTemplate.opsForList().leftPush(dlqKey, job);
+    }
+
     public long getQueueSize(String queueName) {
         Long size = redisTemplate.opsForList().size(queueName);
         return size != null ? size : 0;
