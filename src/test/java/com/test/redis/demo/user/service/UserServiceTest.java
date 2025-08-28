@@ -1,6 +1,6 @@
 package com.test.redis.demo.user.service;
 
-import com.test.redis.demo.queue.dto.UserJobPayload;
+import com.test.redis.demo.queue.dto.JobPayload;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.queue.key.QueueType;
 import com.test.redis.demo.queue.provider.QueueProvider;
@@ -71,11 +71,11 @@ class UserServiceTest {
         verify(mockHashOperations).put(QueueType.USER.getStagingKey(), mockJobId, mockUsers);
 
         // 큐 삽입 검증
-        ArgumentCaptor<UserJobPayload> payloadCaptor = ArgumentCaptor.forClass(UserJobPayload.class);
+        ArgumentCaptor<JobPayload> payloadCaptor = ArgumentCaptor.forClass(JobPayload.class);
         verify(mockQueueProvider, times(1)).enqueue(eq(QueueType.USER.getPendingKey()), payloadCaptor.capture());
 
         // payload 검증(payload는 작업을 수행할 staging queue의 jobId를 가지고 있는다)
-        UserJobPayload capturedPayload = payloadCaptor.getValue();
+        JobPayload capturedPayload = payloadCaptor.getValue();
         assertEquals(JobType.USER_ADD, capturedPayload.jobType());
         assertThat(capturedPayload.jobId()).isEqualTo(mockJobId);
 

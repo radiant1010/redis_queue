@@ -2,7 +2,7 @@ package com.test.redis.demo.user.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.test.redis.demo.queue.dto.UserJobPayload;
+import com.test.redis.demo.queue.dto.JobPayload;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.queue.key.QueueType;
 import com.test.redis.demo.queue.provider.QueueProvider;
@@ -30,7 +30,7 @@ public class UserService {
         // 작업 처리를 위한 jobId 생성
         String jobId = stageUserData(users);
         // payload 생성
-        UserJobPayload payload = createPayload(jobId);
+        JobPayload payload = createPayload(jobId);
         // queue 삽입
         enqueueUserJob(payload);
 
@@ -46,8 +46,8 @@ public class UserService {
     }
 
     // payload 반환
-    private UserJobPayload createPayload(String jobId) {
-        return new UserJobPayload(JobType.USER_ADD, jobId);
+    private JobPayload createPayload(String jobId) {
+        return new JobPayload(JobType.USER_ADD, jobId);
     }
 
     // redis 해시에 값을 저장
@@ -71,7 +71,7 @@ public class UserService {
     }
 
     // queue에 삽입
-    private void enqueueUserJob(UserJobPayload payload) {
+    private void enqueueUserJob(JobPayload payload) {
         queueProvider.enqueue(QueueType.USER.getPendingKey(), payload);
     }
 }
