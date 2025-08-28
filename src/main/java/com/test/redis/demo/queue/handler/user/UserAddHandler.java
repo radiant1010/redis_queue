@@ -11,7 +11,7 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class UserAddHandler implements JobHandler<String> {
+public class UserAddHandler implements JobHandler {
     private final UserService userService;
 
     public UserAddHandler(UserService userService) {
@@ -29,7 +29,6 @@ public class UserAddHandler implements JobHandler<String> {
         try {
             // Redis hash 조회
             List<UserDTO> usersToInsert = userService.getStagedUserData(jobId);
-
 
             if (usersToInsert == null || usersToInsert.isEmpty()) {
                 return false;

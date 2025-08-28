@@ -1,6 +1,6 @@
 package com.test.redis.demo.queue.service;
 
-import com.test.redis.demo.queue.dto.JobPayload;
+import com.test.redis.demo.queue.payload.JobPayload;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.queue.provider.QueueProvider;
 import com.test.redis.demo.suport.redis.AbstractRedisUnitTestContainer;

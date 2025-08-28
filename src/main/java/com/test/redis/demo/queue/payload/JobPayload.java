@@ -1,4 +1,4 @@
-package com.test.redis.demo.queue.dto;
+package com.test.redis.demo.queue.payload;
 
 import com.test.redis.demo.queue.key.JobType;
 /*

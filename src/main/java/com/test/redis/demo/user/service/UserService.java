@@ -2,7 +2,7 @@ package com.test.redis.demo.user.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.test.redis.demo.queue.dto.JobPayload;
+import com.test.redis.demo.queue.payload.JobPayload;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.queue.key.QueueType;
 import com.test.redis.demo.queue.provider.QueueProvider;

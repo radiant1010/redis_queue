@@ -1,6 +1,6 @@
 package com.test.redis.demo.queue.provider;
 
-import com.test.redis.demo.queue.dto.JobPayload;
+import com.test.redis.demo.queue.payload.JobPayload;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
