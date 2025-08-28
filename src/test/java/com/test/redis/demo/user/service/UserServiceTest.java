@@ -1,9 +1,9 @@
 package com.test.redis.demo.user.service;
 
-import com.test.redis.demo.queue.dto.JobPayload;
+import com.test.redis.demo.queue.dto.UserJobPayload;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.queue.key.QueueType;
-import com.test.redis.demo.queue.provider.JobProvider;
+import com.test.redis.demo.queue.provider.QueueProvider;
 import com.test.redis.demo.user.dto.UserDTO;
 import com.test.redis.demo.util.SystemUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +31,7 @@ class UserServiceTest {
     private UserService userService;
 
     @Mock
-    private JobProvider mockJobProvider;
+    private QueueProvider mockQueueProvider;
 
     @Mock
     private SystemUtil mockSystemUtil;
@@ -71,13 +71,13 @@ class UserServiceTest {
         verify(mockHashOperations).put(QueueType.USER.getStagingKey(), mockJobId, mockUsers);
 
         // 큐 삽입 검증
-        ArgumentCaptor<JobPayload<String>> payloadCaptor = ArgumentCaptor.forClass(JobPayload.class);
-        verify(mockJobProvider, times(1)).enqueue(eq(QueueType.USER.getPendingKey()), payloadCaptor.capture());
+        ArgumentCaptor<UserJobPayload> payloadCaptor = ArgumentCaptor.forClass(UserJobPayload.class);
+        verify(mockQueueProvider, times(1)).enqueue(eq(QueueType.USER.getPendingKey()), payloadCaptor.capture());
 
-        // payload 검증
-        JobPayload<String> capturedPayload = payloadCaptor.getValue();
+        // payload 검증(payload는 작업을 수행할 staging queue의 jobId를 가지고 있는다)
+        UserJobPayload capturedPayload = payloadCaptor.getValue();
         assertEquals(JobType.USER_ADD, capturedPayload.jobType());
-        assertThat(capturedPayload.data()).isEqualTo(mockJobId);
+        assertThat(capturedPayload.jobId()).isEqualTo(mockJobId);
 
         // 최종 결과는 jobId가 리턴되었는지 검증
         assertThat(jobId).isNotNull().isNotEmpty();

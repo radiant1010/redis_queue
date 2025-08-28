@@ -2,10 +2,10 @@ package com.test.redis.demo.user.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.test.redis.demo.queue.dto.JobPayload;
+import com.test.redis.demo.queue.dto.UserJobPayload;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.queue.key.QueueType;
-import com.test.redis.demo.queue.provider.JobProvider;
+import com.test.redis.demo.queue.provider.QueueProvider;
 import com.test.redis.demo.user.dto.UserDTO;
 import com.test.redis.demo.util.SystemUtil;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final JobProvider jobProvider;
+    private final QueueProvider queueProvider;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SystemUtil systemUtil;
     private final ObjectMapper objectMapper;
@@ -30,7 +30,7 @@ public class UserService {
         // 작업 처리를 위한 jobId 생성
         String jobId = stageUserData(users);
         // payload 생성
-        JobPayload<String> payload = createPayload(JobType.USER_ADD, jobId);
+        UserJobPayload payload = createPayload(jobId);
         // queue 삽입
         enqueueUserJob(payload);
 
@@ -46,8 +46,8 @@ public class UserService {
     }
 
     // payload 반환
-    private JobPayload<String> createPayload(JobType jobType, String jobId) {
-        return new JobPayload<>(jobType, jobId);
+    private UserJobPayload createPayload(String jobId) {
+        return new UserJobPayload(JobType.USER_ADD, jobId);
     }
 
     // redis 해시에 값을 저장
@@ -71,7 +71,7 @@ public class UserService {
     }
 
     // queue에 삽입
-    private void enqueueUserJob(JobPayload<String> payload) {
-        jobProvider.enqueue(QueueType.USER.getPendingKey(), payload);
+    private void enqueueUserJob(UserJobPayload payload) {
+        queueProvider.enqueue(QueueType.USER.getPendingKey(), payload);
     }
 }
