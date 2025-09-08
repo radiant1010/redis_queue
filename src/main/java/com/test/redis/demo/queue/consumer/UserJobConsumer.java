@@ -25,6 +25,14 @@ public class UserJobConsumer implements JobConsumer {
     private final QueueProvider queueProvider;
     private final Map<JobType, JobHandler> handlerMap;
 
+    private volatile boolean running = true;
+
+    // 외부에서 종료를 명령할 메소드
+    public void stop() {
+        log.warn("[{}] queue의 Consumer에게 중지 명령이 내려졌습니다.", pendingKey);
+        this.running = false;
+    }
+
     public UserJobConsumer(QueueProvider queueProvider, List<JobHandler> handlers) {
         this.queueProvider = queueProvider;
         // List를 JobType을 Key로 하는 Map으로 변환하여 핸들러 맵 구현(getJobType에 맞는 process 실행 목적)
@@ -34,16 +42,20 @@ public class UserJobConsumer implements JobConsumer {
 
     @Override
     public void consume() {
-        log.info("UserJobConsumer queue가 실행되었습니다. key={}", pendingKey);
-        // 스레드가 인터럽트되지 않은 동안 계속 루프를 실행하여 인터럽트 발생 시 안전하게 종료할 수 있도록 조건 체크
-        while (!Thread.currentThread().isInterrupted()) {
+        log.info("UserJobConsumer가 [{}] queue 감시를 시작합니다.", pendingKey);
+        while (running && !Thread.currentThread().isInterrupted()) {
             try {
                 queueProvider.dequeueAndMoveToProcessing(pendingKey, processingKey, Duration.ofSeconds(5))
                         .ifPresent(this::dispatch);
             } catch (Exception e) {
-                log.error("UserJobConsumer 실행 도중 에러 발생 : {}", e.getMessage(), e);
+                if (!running || Thread.currentThread().isInterrupted()) {
+                    log.warn("정상적인 어플리케이션 종료 신호로 인해 감시중인 Consumer 루프를 중단합니다.");
+                } else {
+                    log.error("UserJobConsumer 실행 중 예측하지 못한 에러 발생", e);
+                }
             }
         }
+        log.warn("UserJobConsumer가 [{}] queue 감시를 안전하게 종료합니다.", pendingKey);
     }
 
     private void dispatch(JobPayload job) {

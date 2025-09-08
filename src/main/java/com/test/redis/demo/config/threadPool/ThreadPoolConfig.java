@@ -1,27 +1,26 @@
 package com.test.redis.demo.config.threadPool;
 
-import org.springframework.boot.task.ThreadPoolTaskExecutorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-import org.springframework.core.task.TaskExecutor;
-
-import java.time.Duration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 public class ThreadPoolConfig {
-    @Bean
-    @Primary
-    public TaskExecutor jobConsumerTaskExecutor(ThreadPoolTaskExecutorBuilder builder) {
-        return builder
-                .corePoolSize(1)
-                .maxPoolSize(1) // 순차 처리 보장을 위해 1개로 고정
-                .keepAlive(Duration.ofSeconds(60))
-                .queueCapacity(100)
-                .threadNamePrefix("job-consumer-") // 식별 접두사
-                .awaitTermination(true)
-                .awaitTerminationPeriod(Duration.ofSeconds(30)) // 종료 전 최대 대기 시간
-                // TODO : 작업 reject 처리 핸들러 추가(Optional)
-                .build();
+
+    @Bean(name = "jobConsumerTaskExecutor")
+    public ThreadPoolTaskExecutor jobConsumerExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5); // 기본 스레드 수
+        executor.setMaxPoolSize(10); // 최대 스레드 수
+        executor.setQueueCapacity(25); // 대기 큐 크기
+        executor.setThreadNamePrefix("job-consumer-");
+
+        // 애플리케이션 종료 시, 큐에 대기중인 작업을 모두 처리할 때까지 기다릴지 여부
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        // 대기 시간 (초)
+        executor.setAwaitTerminationSeconds(60);
+
+        executor.initialize();
+        return executor;
     }
 }
