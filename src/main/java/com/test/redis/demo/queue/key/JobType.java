@@ -4,7 +4,11 @@ import lombok.Getter;
 
 @Getter
 public enum JobType {
-    USER_ADD,
-    USER_UPDATE,
-    USER_DELETE;
+    USER_ADD(QueueType.USER);
+
+    private final QueueType queueType;
+
+    JobType(QueueType queueType) {
+        this.queueType = queueType;
+    }
 }

@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum QueueType {
-    USER("staging:user-jobs",
+    USER("queue:staging:user-jobs",
             "queue:pending:user-jobs",
             "queue:processing:user-jobs",
             "queue:dlq:user-jobs");
