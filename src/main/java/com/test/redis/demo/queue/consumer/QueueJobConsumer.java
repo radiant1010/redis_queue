@@ -14,7 +14,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class QueueJobConsumer implements Runnable {
+public class QueueJobConsumer implements JobConsumer  {
 
     private final String consumerName;
     private final String pendingKey;
@@ -46,7 +46,7 @@ public class QueueJobConsumer implements Runnable {
     }
 
     @Override
-    public void run() { // consume() -> run()으로 변경
+    public void consume() { // consume() -> run()으로 변경
         log.info("[{}]가 [{}] queue 감시를 시작합니다.", consumerName, pendingKey);
         while (running && !Thread.currentThread().isInterrupted()) {
             try {

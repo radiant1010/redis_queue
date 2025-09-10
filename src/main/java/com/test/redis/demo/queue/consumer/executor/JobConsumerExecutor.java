@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /*
@@ -68,6 +69,16 @@ public class JobConsumerExecutor implements SmartLifecycle {
         log.warn("[JobConsumerExecutor 종료 2/2] 스레드 풀에 종료 요청...");
         if (taskExecutor instanceof ThreadPoolTaskExecutor executor) {
             executor.shutdown();
+            try {
+                if (!executor.getThreadPoolExecutor().awaitTermination(10, TimeUnit.SECONDS)) {
+                    log.error("Job Consumer 스레드 풀이 10초 내에 정상적으로 종료되지 않았습니다. 강제 종료를 시도합니다.");
+                    // executor.shutdownNow(); // 필요에 따라 강제 종료 로직 추가
+                }
+            } catch (InterruptedException e) {
+                log.error("Job Consumer 스레드 풀 종료 대기 중 인터럽트가 발생했습니다.", e);
+                // executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
 
         // 종료 콜백을 실행하여 Spring에게 JobConsumer의 종료 절차를 알립니다. Spring의 종료 프로세스가 대기함
