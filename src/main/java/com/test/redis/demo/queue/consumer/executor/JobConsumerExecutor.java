@@ -1,14 +1,11 @@
 package com.test.redis.demo.queue.consumer.executor;
 
 import com.test.redis.demo.queue.consumer.JobConsumer;
-import com.test.redis.demo.queue.consumer.UserJobConsumer;
-import jakarta.annotation.PostConstruct;
+import com.test.redis.demo.queue.consumer.QueueJobConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.SmartLifecycle;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
@@ -16,7 +13,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /*
@@ -63,7 +59,7 @@ public class JobConsumerExecutor implements SmartLifecycle {
         // 작업 종료 요청 이후 신규 작업은 추가 하지 않도록 요청
         log.warn("[JobConsumerExecutor 종료 1/2] Consumer들에게 중지 명령 전달, 진행 중인 작업은 계속 처리 중...");
         consumers.forEach(consumer -> {
-            if (consumer instanceof UserJobConsumer userJobConsumer) {
+            if (consumer instanceof QueueJobConsumer userJobConsumer) {
                 userJobConsumer.stop();
             }
         });
