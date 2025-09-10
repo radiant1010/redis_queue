@@ -1,9 +1,11 @@
 package com.test.redis.demo.queue.handler.user;
 
+import com.test.redis.demo.config.queue.StagingManageService;
 import com.test.redis.demo.queue.handler.JobHandler;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.user.dto.UserDTO;
 import com.test.redis.demo.user.service.UserService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -11,12 +13,11 @@ import java.util.List;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class UserAddHandler implements JobHandler {
-    private final UserService userService;
 
-    public UserAddHandler(UserService userService) {
-        this.userService = userService;
-    }
+    private final UserService userService;
+    private final StagingManageService<UserDTO> userStagingService;
 
     @Override
     public JobType getJobType() {
@@ -28,7 +29,7 @@ public class UserAddHandler implements JobHandler {
         log.info("[{}] 작업 시작", jobId);
         try {
             // Redis hash 조회
-            List<UserDTO> usersToInsert = userService.getStagedUserData(jobId);
+            List<UserDTO> usersToInsert = userStagingService.getStagedData(jobId);
 
             if (usersToInsert == null || usersToInsert.isEmpty()) {
                 return false;
@@ -37,7 +38,7 @@ public class UserAddHandler implements JobHandler {
             boolean insertResult = userService.insertUser(usersToInsert);
 
             if (insertResult) {
-                userService.deleteStagedUserData(jobId);
+                userStagingService.deleteStagedData(jobId);
             }
 
             return insertResult;

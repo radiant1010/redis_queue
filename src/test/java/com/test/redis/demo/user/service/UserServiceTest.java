@@ -1,5 +1,6 @@
 package com.test.redis.demo.user.service;
 
+import com.test.redis.demo.config.queue.StagingManageService;
 import com.test.redis.demo.queue.payload.JobPayload;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.queue.key.QueueType;
@@ -31,29 +32,10 @@ class UserServiceTest {
     private UserService userService;
 
     @Mock
-    private QueueProvider mockQueueProvider;
-
-    @Mock
-    private SystemUtil mockSystemUtil;
-
-    @Mock
-    private RedisTemplate<String, Object> mockRedisTemplate;
-
-    // opsForHash() 같은 체인 메소드를 모킹
-    @Mock
-    private HashOperations<String, String, Object> mockHashOperations;
-
-    @BeforeEach
-    void setUp() {
-        // mockRedisTemplate.opsForHash() 호출 시 mockHashOperations 객체를 반환
-        doReturn(mockHashOperations)
-                .when(mockRedisTemplate)
-                .opsForHash();
-    }
-
+    private StagingManageService<UserDTO> mockUserStagingService;
 
     @Test
-    @DisplayName("submitJob 호출 시, 생성된 jobId가 일관되게 사용되고, 의존 객체들이 올바르게 호출되어야 한다")
+    @DisplayName("submitJob 호출 시, StagingManageService에게 작업을 올바르게 위임해야 한다")
     public void successTestUserAddProcess() {
         // given : UserDTO 리스트 Stub 생성
         List<UserDTO> mockUsers = List.of(
@@ -62,24 +44,13 @@ class UserServiceTest {
         );
 
         String mockJobId = "fake-uuid-for-test-123";
-        when(mockSystemUtil.generatedUuid()).thenReturn(mockJobId);
+        when(mockUserStagingService.processAndEnqueue(mockUsers)).thenReturn(mockJobId);
 
         // when : submitJob 메서드 호출
-        String jobId = userService.submitJob(mockUsers);
+        String resultJobId = userService.submitJob(mockUsers);
 
-        // Redis 해시 저장이 호출되었는지 검증
-        verify(mockHashOperations).put(QueueType.USER.getStagingKey(), mockJobId, mockUsers);
-
-        // 큐 삽입 검증
-        ArgumentCaptor<JobPayload> payloadCaptor = ArgumentCaptor.forClass(JobPayload.class);
-        verify(mockQueueProvider, times(1)).enqueue(eq(QueueType.USER.getPendingKey()), payloadCaptor.capture());
-
-        // payload 검증(payload는 작업을 수행할 staging queue의 jobId를 가지고 있는다)
-        JobPayload capturedPayload = payloadCaptor.getValue();
-        assertEquals(JobType.USER_ADD, capturedPayload.jobType());
-        assertThat(capturedPayload.jobId()).isEqualTo(mockJobId);
-
-        // 최종 결과는 jobId가 리턴되었는지 검증
-        assertThat(jobId).isNotNull().isNotEmpty();
+        // then
+        verify(mockUserStagingService, times(1)).processAndEnqueue(mockUsers);
+        assertThat(resultJobId).isEqualTo(mockJobId);
     }
 }
