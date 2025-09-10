@@ -1,11 +1,11 @@
 package com.test.redis.demo.queue.consumer;
 
+import com.test.redis.demo.queue.handler.JobHandler;
+import com.test.redis.demo.queue.key.JobType;
+import com.test.redis.demo.queue.key.QueueType;
+import com.test.redis.demo.queue.payload.JobPayload;
+import com.test.redis.demo.queue.provider.QueueProvider;
 import lombok.extern.slf4j.Slf4j;
-import net.bellins.groupPortal.queue.handler.JobHandler;
-import net.bellins.groupPortal.queue.key.JobType;
-import net.bellins.groupPortal.queue.key.QueueType;
-import net.bellins.groupPortal.queue.payload.JobPayload;
-import net.bellins.groupPortal.queue.provider.QueueProvider;
 
 import java.time.Duration;
 import java.util.List;
@@ -54,7 +54,7 @@ public class QueueJobConsumer implements Runnable {
                 queueProvider.dequeueAndMoveToProcessing(pendingKey, processingKey, Duration.ofSeconds(5))
                         .ifPresent(this::dispatch);
             } catch (Exception e) {
-                if (!running) {
+                if (!running || Thread.currentThread().isInterrupted()) {
                     log.warn("[{}] 정상적인 종료 신호로 인해 루프를 중단합니다.", consumerName);
                 } else {
                     log.error("[{}] 실행 중 예측하지 못한 에러 발생", consumerName, e);
