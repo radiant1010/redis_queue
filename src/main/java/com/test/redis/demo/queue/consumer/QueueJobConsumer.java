@@ -46,7 +46,7 @@ public class QueueJobConsumer implements JobConsumer  {
     }
 
     @Override
-    public void consume() { // consume() -> run()으로 변경
+    public void consume() {
         log.info("[{}]가 [{}] queue 감시를 시작합니다.", consumerName, pendingKey);
         while (running && !Thread.currentThread().isInterrupted()) {
             try {
