@@ -50,7 +50,6 @@ public class QueueJobConsumer implements JobConsumer  {
         log.info("[{}]가 [{}] queue 감시를 시작합니다.", consumerName, pendingKey);
         while (running && !Thread.currentThread().isInterrupted()) {
             try {
-                // Dequeue 로직은 동일
                 queueProvider.dequeueAndMoveToProcessing(pendingKey, processingKey, Duration.ofSeconds(5))
                         .ifPresent(this::dispatch);
             } catch (Exception e) {
@@ -64,7 +63,6 @@ public class QueueJobConsumer implements JobConsumer  {
         log.warn("[{}]가 [{}] queue 감시를 안전하게 종료합니다.", consumerName, pendingKey);
     }
 
-    // dispatch 로직은 동일
     private void dispatch(JobPayload job) {
         JobType jobType = job.jobType();
         JobHandler handler = handlerMap.get(jobType);
