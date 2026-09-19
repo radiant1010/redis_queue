@@ -5,4 +5,5 @@ public interface JobConsumer {
     void start();
     void consume();
     void stop();
+    default void abort() { stop(); }
 }

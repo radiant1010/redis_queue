@@ -97,6 +97,14 @@ bash ./gradlew bootRun --args='--spring.profiles.active=demo'
 
 Mock은 호출 흐름을 보여주는 예제이므로 실제 HTTP 상태 코드별 재시도 정책이나 원격 서비스의 멱등성을 구현하지는 않습니다. 종료로 인한 interrupt는 최종 실패 메일 대상으로 취급하지 않고 Processing에 남겨 복구합니다. 알림 어댑터가 예외를 던져도 작업은 DLQ로 이동합니다. 실제 메일의 전달 보장·별도 발송 재시도는 연결하는 메일 서비스의 책임입니다.
 
+## Graceful Shutdown
+
+종료 시 Consumer의 다음 작업 획득을 멈추고 현재 작업을 최대 45초 기다립니다. 시간이 지나면 취소와 interrupt를 요청하고 5초 동안 정리 완료를 기다립니다. 실제 Consumer 스레드가 끝나야 Spring에 종료 완료를 알립니다.
+
+이 대기 시간의 합은 `spring.lifecycle.timeout-per-shutdown-phase`(기본 60초)보다 짧아야 합니다. Spring의 제한 시간을 넘긴 뒤 `@PreDestroy`에서만 interrupt하면 Redis 연결 팩토리가 이미 종료되어 `LettuceConnectionFactory has been STOPPED` 또는 `was destroyed` 오류가 발생할 수 있기 때문입니다.
+
+취소된 작업은 Processing에 남기며, Handler가 interrupt를 무시하고 뒤늦게 성공을 반환해도 큐의 완료 처리를 하지 않습니다. 외부 Handler 자체가 취소를 무시하거나 별도로 Redis를 사용한다면 강제 종료와 자원 접근까지 보장할 수 없으므로, 연동하는 호출에도 제한 시간과 취소 처리가 필요합니다.
+
 ## 운영 기능
 
 DLQ 조회·수동 재처리 API, 큐·Consumer 상태 점검, 보존 기간 정리는 사용할 수 있습니다. API를 사용하려면 `QUEUE_OPS_TOKEN`을 설정합니다.

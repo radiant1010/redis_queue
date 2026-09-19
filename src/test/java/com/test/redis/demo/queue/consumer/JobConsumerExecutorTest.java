@@ -12,6 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class JobConsumerExecutorTest {
     @Test
+    void refusesShutdownBudgetThatWouldOutliveSpringPhase() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                new JobConsumerExecutor(List.of(), "45s", "5s", "30s"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("shorter than Spring");
+    }
+
+    @Test
     void springCloseWaitsForConsumerBeforeDestroyingDependencies() throws Exception {
         BlockingConsumer consumer = new BlockingConsumer();
         try (AnnotationConfigApplicationContext context = context(consumer, 5000)) {
@@ -68,6 +76,11 @@ class JobConsumerExecutorTest {
 
     private AnnotationConfigApplicationContext context(BlockingConsumer consumer, long timeout) {
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+        context.getEnvironment().getPropertySources().addFirst(new org.springframework.core.env.MapPropertySource(
+                "shutdown-test", java.util.Map.of(
+                        "queue.shutdown.grace-period", (timeout / 4) + "ms",
+                        "queue.shutdown.interrupt-wait", (timeout / 4) + "ms",
+                        "spring.lifecycle.timeout-per-shutdown-phase", timeout + "ms")));
         context.registerBean("lifecycleProcessor", DefaultLifecycleProcessor.class, () -> {
             DefaultLifecycleProcessor processor = new DefaultLifecycleProcessor();
             processor.setTimeoutPerShutdownPhase(timeout);

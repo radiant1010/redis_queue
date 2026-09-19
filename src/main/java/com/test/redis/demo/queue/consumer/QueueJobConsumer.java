@@ -26,6 +26,7 @@ public class QueueJobConsumer implements JobConsumer {
     private final Map<JobType, JobHandler> handlerMap;
 
     private volatile boolean running;
+    private volatile boolean aborted;
     private volatile String state = "STOPPED";
     public String getState() { return state; }
     public QueueType getQueueType() { return queueType; }
@@ -54,8 +55,21 @@ public class QueueJobConsumer implements JobConsumer {
     @Override
     public void start() {
         queueProvider.recover(queueType);
+        this.aborted = false;
         this.running = true;
         state = "RUNNING";
+    }
+
+    @Override
+    public void abort() {
+        this.aborted = true;
+        stop();
+    }
+
+    private void checkCancellation() {
+        if (aborted || Thread.currentThread().isInterrupted()) {
+            throw new java.util.concurrent.CancellationException("Job cancelled; preserved in Processing");
+        }
     }
 
     @Override
@@ -80,6 +94,7 @@ public class QueueJobConsumer implements JobConsumer {
     }
 
     private void dispatch(JobPayload job) {
+        checkCancellation();
         JobType jobType = job.jobType();
         JobHandler handler = handlerMap.get(jobType);
 
@@ -97,6 +112,7 @@ public class QueueJobConsumer implements JobConsumer {
                 log.error("[{}] Job 처리 중 에러 발생: {}", consumerName, job, e);
             }
 
+            checkCancellation();
             if (success) {
                 queueProvider.removeProcessingQueue(processingKey, job);
             } else {

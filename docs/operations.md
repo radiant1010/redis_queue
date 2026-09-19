@@ -177,8 +177,12 @@ docker compose down
 | `queue.policy.expiry-warning` / `stuck-threshold` | `1d` / `5m` |
 | `queue.policy.alert-cooldown` | `5m` |
 | `spring.lifecycle.timeout-per-shutdown-phase` | `60s` |
+| `queue.shutdown.grace-period` | `45s`: 진행 중 작업의 정상 완료 대기 |
+| `queue.shutdown.interrupt-wait` | `5s`: 취소·interrupt 이후 정리 대기 |
 
 보존 기간 설정은 이후 상태 전환에 적용됩니다. 이미 기록된 작업의 기한을 일괄 변경하지 않습니다. 메타데이터 보존 기간은 원문 보존 기간보다 길어야 합니다.
+
+두 Consumer 종료 대기 시간의 합은 Spring의 lifecycle 단계 제한 시간보다 짧아야 합니다. 조건을 만족하지 않으면 시작 시 설정 오류로 거부합니다. 완료 대기 시간이 지나면 Spring이 Redis 종료 단계로 넘어가기 전에 Consumer를 취소합니다. Handler가 취소를 무시하면 실제 스레드 종료 전까지 완료 콜백을 실행하지 않으며, Spring의 최종 제한 시간 이후에는 외부 Handler의 자원 접근을 보장할 수 없습니다.
 
 ## 테스트
 
@@ -195,7 +199,8 @@ bash ./gradlew clean build
 핵심 검증:
 
 - FIFO, 앞 Handler가 끝나기 전 다음 Handler가 실행되지 않는지
-- 정상 종료 대기, Spring 종료 제한 시간 이후 interrupt
+- 실제 Lettuce 연결 팩토리로 정상 종료 및 Spring 제한 시간 이전 interrupt·정리 검증
+- interrupt를 무시한 Handler의 늦은 완료 처리 차단과 Processing 보존
 - DB 일부 저장 실패 시 업무 행·처리 이력 동시 롤백
 - DB 파일을 닫고 앱을 다시 시작해도 커밋된 작업의 중복 저장 방지
 - DLQ 원인·이력·시도 횟수, 재처리 중복 요청과 횟수 제한
@@ -212,7 +217,7 @@ DB 및 운영 기능에 더해 기본 Mock 데모의 호출 재시도·최종 �
 
 - 단일 애플리케이션 인스턴스·standalone Redis 전용입니다. 분산 락·Redis Cluster를 지원하지 않습니다.
 - 실패 작업을 DLQ로 보낸 뒤 다음 작업은 진행합니다. 앞 작업의 성공을 반드시 요구하는 워크플로가 아닙니다.
-- 앱 종료 시 다음 반복의 작업 획득을 멈춥니다. 이미 진행 중인 5초 blocking poll이 반환한 작업은 처리할 수 있습니다. 60초 종료 제한 이후 interrupt를 무시하는 Handler의 강제 종료는 보장하지 않습니다.
+- 앱 종료 시 다음 반복의 작업 획득을 멈춥니다. 이미 진행 중인 5초 blocking poll이 반환한 작업은 처리할 수 있습니다. 기본 45초 대기 후 취소·interrupt를 요청하고 5초 정리를 기다립니다. 취소를 무시하는 Handler의 강제 종료는 보장하지 않습니다.
 - Redis와 DB 사이에 분산 트랜잭션은 없습니다. Redis 자체 데이터 유실, 서로 다른 시점의 Redis·DB 백업 복원까지 자동 해결하지 않습니다.
 - 파일 DB는 재현 가능한 로컬 예제용입니다. 다른 DB 적용 시 드라이버·스키마·트랜잭션 동작을 검증해야 합니다.
 - 이전 공유 Staging Hash 형식과 새 메타데이터 형식의 자동 마이그레이션은 없습니다. 기존 대기 작업을 정리한 뒤 새 형식으로 전환해야 합니다. API 예제 DTO는 `email`, `displayName`이며 비밀번호 필드는 제거했습니다.

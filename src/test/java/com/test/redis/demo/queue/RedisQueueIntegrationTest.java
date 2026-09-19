@@ -598,6 +598,47 @@ class RedisQueueIntegrationTest {
     }
 
     @Test
+    void forcedShutdownDoesNotAcknowledgeHandlerThatSwallowsInterrupt() throws InterruptedException {
+        enqueue("slow", "next");
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch interrupted = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        CountDownLatch stopped = new CountDownLatch(1);
+        JobHandler slowHandler = handler(id -> {
+            entered.countDown();
+            boolean finished = false;
+            while (!finished) {
+                try {
+                    release.await();
+                    finished = true;
+                } catch (InterruptedException e) {
+                    interrupted.countDown(); // Deliberately simulate a badly behaved external adapter.
+                }
+            }
+            return true;
+        });
+        JobConsumerExecutor executor = new JobConsumerExecutor(
+                List.of(new QueueJobConsumer(QUEUE, provider, List.of(slowHandler))),
+                Duration.ofMillis(50), Duration.ofMillis(50));
+        executors.add(executor);
+        executor.start();
+        try {
+            assertThat(entered.await(5, TimeUnit.SECONDS)).isTrue();
+            executor.stop(stopped::countDown);
+            assertThat(interrupted.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(stopped.await(100, TimeUnit.MILLISECONDS)).isFalse();
+        } finally {
+            release.countDown();
+        }
+        assertThat(stopped.await(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(provider.metadata("slow")).containsEntry("status", "PROCESSING");
+        assertThat(provider.getQueueSize(QUEUE.getProcessingKey())).isEqualTo(1);
+        assertThat(provider.getQueueSize(QUEUE.getPendingKey())).isEqualTo(1);
+        assertThat(provider.getQueueSize(QUEUE.getDlqKey())).isZero();
+        assertThat(provider.counters()).doesNotContainKey("succeeded");
+    }
+
+    @Test
     void idleConsumerStopsAfterBlockingPollTimeout() throws InterruptedException {
         JobConsumerExecutor executor = start(userHandler);
         CountDownLatch stopped = new CountDownLatch(1);
