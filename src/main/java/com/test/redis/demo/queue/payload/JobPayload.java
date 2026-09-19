@@ -9,4 +9,10 @@ public record JobPayload(
         JobType jobType,
         String jobId
 ) {
+    public JobPayload {
+        java.util.Objects.requireNonNull(jobType, "jobType");
+        if (jobId == null || jobId.isBlank()) {
+            throw new IllegalArgumentException("jobId must not be blank");
+        }
+    }
 }

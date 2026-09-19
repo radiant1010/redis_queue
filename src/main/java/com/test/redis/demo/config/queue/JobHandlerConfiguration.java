@@ -9,7 +9,7 @@ import com.test.redis.demo.user.dto.UserDTO;
 import com.test.redis.demo.util.SystemUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.List;
 
@@ -23,7 +23,7 @@ public class JobHandlerConfiguration {
             // TODO : 추후 프리셋으로 등록한 다음 사용(ex. 팩토리 메서드)
             SystemUtil systemUtil,
             QueueProvider queueProvider,
-            RedisTemplate<String, Object> redisTemplate,
+            StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper
     ) {
         return new StagingManageService<>(

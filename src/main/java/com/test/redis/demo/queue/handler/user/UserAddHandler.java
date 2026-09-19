@@ -4,47 +4,36 @@ import com.test.redis.demo.config.queue.StagingManageService;
 import com.test.redis.demo.queue.handler.JobHandler;
 import com.test.redis.demo.queue.key.JobType;
 import com.test.redis.demo.user.dto.UserDTO;
-import com.test.redis.demo.user.service.UserService;
+import com.test.redis.demo.user.service.UserWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
+@org.springframework.context.annotation.Profile("database")
 @Slf4j
 @RequiredArgsConstructor
 public class UserAddHandler implements JobHandler {
-
-    private final UserService userService;
-    private final StagingManageService<UserDTO> userStagingService;
+    private final UserWriter writer;
+    private final StagingManageService<UserDTO> staging;
 
     @Override
-    public JobType getJobType() {
-        return JobType.USER_ADD;
-    }
+    public JobType getJobType() { return JobType.USER_ADD; }
 
     @Override
     public boolean process(String jobId) {
         log.info("[{}] 작업 시작", jobId);
-        try {
-            // Redis hash 조회
-            List<UserDTO> usersToInsert = userStagingService.getStagedData(jobId);
-
-            if (usersToInsert == null || usersToInsert.isEmpty()) {
-                return false;
+        // A committed receipt wins even if the staging payload is no longer available.
+        if (!writer.isProcessed(jobId)) {
+            try {
+                writer.insertOnce(jobId, staging.getStagedData(jobId));
+            } catch (org.springframework.dao.DuplicateKeyException e) {
+                // Another transaction may have committed the same job after our first check.
+                if (!writer.isProcessed(jobId)) throw e;
             }
-
-            boolean insertResult = userService.insertUser(usersToInsert);
-
-            if (insertResult) {
-                userStagingService.deleteStagedData(jobId);
-            }
-
-            return insertResult;
-        } catch (Exception e) {
-            log.error("[{}] Queue 작업 처리 도중 오류가 발생 하였습니다. {}", jobId, e.getMessage(), e);
-            return false;
         }
+        // QueueProvider atomically cleans up Staging when acknowledging success.
+        log.info("[{}] DB 반영 완료 (중복 요청 포함)", jobId);
+        return true;
     }
 }

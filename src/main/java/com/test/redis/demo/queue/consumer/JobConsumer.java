@@ -1,6 +1,8 @@
 package com.test.redis.demo.queue.consumer;
 
-// Marker 인터페이스(consumer Executor 에서 실행 시킬 목적)
+// Consumer execution and cooperative shutdown contract.
 public interface JobConsumer {
+    void start();
     void consume();
+    void stop();
 }
